@@ -1,0 +1,326 @@
+// C++ include files that we need
+#include <iostream>
+
+// libMesh includes
+#include "libmesh/libmesh.h"
+#include "libmesh/mesh.h"
+#include "libmesh/mesh_generation.h"
+#include "libmesh/exodusII_io.h"
+#include "libmesh/equation_systems.h"
+#include "libmesh/fe.h"
+#include "libmesh/quadrature_gauss.h"
+#include "libmesh/dof_map.h"
+#include "libmesh/sparse_matrix.h"
+#include "libmesh/numeric_vector.h"
+#include "libmesh/dense_matrix.h"
+#include "libmesh/dense_vector.h"
+#include "libmesh/elem.h"
+#include "libmesh/boundary_info.h"
+#include "libmesh/string_to_enum.h"
+#include "libmesh/getpot.h"
+#include "libmesh/zero_function.h"
+#include "libmesh/dirichlet_boundaries.h"
+
+#include "optimization_system.h"
+#include "optimization_solver.h"
+
+// Bring in everything from the libMesh namespace
+using namespace libMesh;
+
+/**
+ * This class encapsulate all functionality required for assembling
+ * and solving a linear elastic model with contact.
+ */
+class AssembleOptimization :
+  public OptimizationSystem::ComputeObjective,
+  public OptimizationSystem::ComputeGradient,
+  public OptimizationSystem::ComputeHessian
+{
+private:
+
+  /**
+   * Keep a reference to the OptimizationSystem.
+   */
+  OptimizationSystem& _sys;
+
+public:
+
+  /**
+   * Constructor.
+   */
+  AssembleOptimization(
+    OptimizationSystem &sys_in);
+
+  /**
+   * The optimization problem we consider here is:
+   *   min_U 0.5*U^T A U - U^T F.
+   * In this method, we assemble A and F.
+   */
+  void assemble_A_and_F();
+
+  /**
+   * Evaluate the objective function.
+   */
+  virtual Number objective (
+    const NumericVector<Number>& soln,
+    OptimizationSystem& /*sys*/);
+
+  /**
+   * Evaluate the gradient.
+   */
+  virtual void gradient (
+    const NumericVector<Number>& soln,
+    NumericVector<Number>& grad_f,
+    OptimizationSystem& /*sys*/);
+
+  /**
+   * Evaluate the Hessian.
+   */
+  virtual void hessian (
+    const NumericVector<Number>& soln,
+    SparseMatrix<Number>& H_f,
+    OptimizationSystem& /*sys*/);
+
+//  /**
+//   * Evaluate the vector C_eq(x) that defines equality
+//   * constraints according to C_eq(x) = 0.
+//   */
+//  virtual void equality_constraints (
+//    const NumericVector<Number>& soln,
+//    NumericVector<Number>& C_eq,
+//    OptimizationSystem& /*sys*/);
+
+  /**
+   * Sparse matrix for storing the matrix A. We use
+   * this to facilitate computation of objective, gradient
+   * and hessian.
+   */
+  SparseMatrix<Number>* A_matrix;
+
+  /**
+   * Vector for storing F. We use this to facilitate 
+   * computation of objective, gradient and hessian.
+   */
+  NumericVector<Number>* F_vector;
+
+};
+
+AssembleOptimization::AssembleOptimization(OptimizationSystem &sys_in)
+  :
+  _sys(sys_in)
+{}
+
+void AssembleOptimization::assemble_A_and_F()
+{
+  A_matrix->zero();
+  F_vector->zero();
+
+  const MeshBase& mesh = _sys.get_mesh();
+
+  const unsigned int dim = mesh.mesh_dimension();
+  const unsigned int u_var = _sys.variable_number ("u");
+
+  const DofMap& dof_map = _sys.get_dof_map();
+  FEType fe_type = dof_map.variable_type(u_var);
+  UniquePtr<FEBase> fe (FEBase::build(dim, fe_type));
+  QGauss qrule (dim, fe_type.default_quadrature_order());
+  fe->attach_quadrature_rule (&qrule);
+
+  const std::vector<Real>& JxW = fe->get_JxW();
+  const std::vector<std::vector<Real> >& phi = fe->get_phi();
+  const std::vector<std::vector<RealGradient> >& dphi = fe->get_dphi();
+
+  std::vector<dof_id_type> dof_indices;
+
+  DenseMatrix<Number> Ke;
+  DenseVector<Number> Fe;
+
+  MeshBase::const_element_iterator       el     = mesh.active_local_elements_begin();
+  const MeshBase::const_element_iterator end_el = mesh.active_local_elements_end();
+
+  for ( ; el != end_el; ++el)
+  {
+    const Elem* elem = *el;
+
+    dof_map.dof_indices (elem, dof_indices);
+
+    const unsigned int n_dofs = dof_indices.size();
+
+    fe->reinit (elem);
+
+    Ke.resize (n_dofs,n_dofs);
+    Fe.resize (n_dofs);
+
+    for (unsigned int qp=0; qp<qrule.n_points(); qp++)
+    {
+      for (unsigned int dof_i=0; dof_i<n_dofs; dof_i++)
+      {
+        for (unsigned int dof_j=0; dof_j<n_dofs; dof_j++)
+        {
+          Ke(dof_i, dof_j) += JxW[qp] * (dphi[dof_j][qp]* dphi[dof_i][qp]);
+        }
+        Fe(dof_i) += JxW[qp] * phi[dof_i][qp];
+      }
+    }
+
+    // This will zero off-diagonal entries of Ke corresponding to
+    // Dirichlet dofs.
+    dof_map.constrain_element_matrix_and_vector (Ke, Fe, dof_indices);
+
+    // We want the diagonal of constrained dofs to be zero too
+    for(unsigned int local_dof_index=0; local_dof_index<n_dofs; local_dof_index++)
+    {
+      dof_id_type global_dof_index = dof_indices[local_dof_index];
+      if(dof_map.is_constrained_dof(global_dof_index))
+      {
+        Ke(local_dof_index,local_dof_index) = 0.;
+      }
+    }
+
+    A_matrix->add_matrix (Ke, dof_indices);
+    F_vector->add_vector (Fe, dof_indices);
+  }
+
+  A_matrix->close();
+  F_vector->close();
+}
+
+Number AssembleOptimization::objective (
+  const NumericVector<Number>& soln,
+  OptimizationSystem& /*sys*/)
+{
+  UniquePtr< NumericVector<Number> > AxU = soln.zero_clone();
+
+  A_matrix->vector_mult(*AxU, soln);
+  Real UTxAxU = AxU->dot(soln);
+
+  Real UTxF = F_vector->dot(soln);
+
+  return 0.5 * UTxAxU - UTxF;
+}
+
+void AssembleOptimization::gradient (
+  const NumericVector<Number>& soln,
+  NumericVector<Number>& grad_f,
+  OptimizationSystem& /*sys*/)
+{
+  grad_f.zero();
+
+  // Since we've enforced constaints on soln, A and F,
+  // this automatically sets grad_f to zero for constrained
+  // dofs.
+  A_matrix->vector_mult(grad_f, soln);
+  grad_f.add(-1, *F_vector);
+}
+
+
+void AssembleOptimization::hessian (
+  const NumericVector<Number>& soln,
+  SparseMatrix<Number>& H_f,
+  OptimizationSystem& /*sys*/)
+{
+  H_f.zero();
+  H_f.add(1., *A_matrix);
+}
+
+//void AssembleOptimization::equality_constraints (
+//  const NumericVector<Number>& soln,
+//  NumericVector<Number>& C_eq,
+//  OptimizationSystem& /*sys*/)
+//{
+//  dof_id_type count = 0;
+//  for(dof_id_type dof_index=0; dof_index<_sys.n_dofs(); dof_index++)
+//  {
+//    if(_sys.get_dof_map().is_constrained_dof(dof_index))
+//    {
+//      C_eq.set(count, soln(dof_index));
+//      count++;
+//    }
+//  }
+//}
+
+
+int main (int argc, char** argv)
+{
+  LibMeshInit init (argc, argv);
+
+  GetPot infile("tao_test.in");
+  const std::string approx_order = infile("approx_order", "FIRST");
+  const std::string fe_family = infile("fe_family", "LAGRANGE");
+
+  Mesh mesh(init.comm());
+  MeshTools::Generation::build_square (mesh,
+                                       10,
+                                       10,
+                                       -1., 1.,
+                                       -1., 1.,
+                                       QUAD9);
+
+  mesh.print_info();
+
+  EquationSystems equation_systems (mesh);
+
+  OptimizationSystem& system =
+    equation_systems.add_system<OptimizationSystem> ("Optimization");
+
+  AssembleOptimization assemble_opt(system);
+
+  unsigned int u_var = system.add_variable("u",
+                       Utility::string_to_enum<Order>   (approx_order),
+                       Utility::string_to_enum<FEFamily>(fe_family));
+
+  system.optimization_solver->objective_object     = &assemble_opt;
+  system.optimization_solver->gradient_object      = &assemble_opt;
+  system.optimization_solver->hessian_object       = &assemble_opt;
+
+  // Seems like -tao_type ipm is the only solver that can handle
+  // equality constraints.
+//  system.optimization_solver->equality_constraints = &assemble_opt;
+
+  // system.matrix and system.rhs are used for the gradient and Hessian,
+  // so in this case we add an extra matrix and vector to store A and F.
+  // This makes it easy to write the code for evaluating the objective,
+  // gradient, and hessian.
+  system.add_matrix("A_matrix");
+  system.add_vector("F_vector");
+  assemble_opt.A_matrix = &system.get_matrix("A_matrix");
+  assemble_opt.F_vector = &system.get_vector("F_vector");
+
+  // Apply Dirichlet constraints. We can then use DofMap::is_constrained_dof
+  // to figure out which dofs we want to apply equality constraints to.
+  std::set<boundary_id_type> boundary_ids;
+  boundary_ids.insert(0);
+  boundary_ids.insert(1);
+  boundary_ids.insert(2);
+  boundary_ids.insert(3);
+  std::vector<unsigned int> variables;
+  variables.push_back(u_var);
+  ZeroFunction<> zf;
+  DirichletBoundary dirichlet_bc(boundary_ids,
+                                 variables,
+                                 &zf);
+  system.get_dof_map().add_dirichlet_boundary(dirichlet_bc);
+
+
+  equation_systems.init();
+  equation_systems.print_info();
+
+  assemble_opt.assemble_A_and_F();
+
+  // Let's assume that we impose an equality constraint
+  // for every constrained dof in the system
+  system.initialize_equality_constraints_storage(system.n_constrained_dofs());
+
+  // We need to close the matrix so that we can use it to store the
+  // Hessian during the solve.
+  system.matrix->close();
+  system.solve();
+
+  std::stringstream filename;
+  ExodusII_IO (mesh).write_equation_systems(
+    "optimization_soln.exo",
+    equation_systems);
+
+  return 0;
+}
+
