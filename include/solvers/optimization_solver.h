@@ -24,7 +24,6 @@
 #include "libmesh/libmesh_common.h"
 #include "libmesh/enum_solver_package.h"
 #include "libmesh/reference_counted_object.h"
-#include "libmesh/nonlinear_implicit_system.h"
 #include "libmesh/libmesh.h"
 #include "libmesh/parallel_object.h"
 #include "libmesh/auto_ptr.h"
@@ -43,13 +42,12 @@ template <typename T> class Preconditioner;
 
 /**
  * This class provides a uniform interface for optimization solvers.  This base
- * class is overloaded to provide nonlinear solvers from different packages
- * like PETSC.
+ * class is overloaded to provide optimization solvers from different packages.
  *
  * @author David Knezevic, 2015
  */
 template <typename T>
-class OptimizationSolver : public ReferenceCountedObject<NonlinearSolver<T> >,
+class OptimizationSolver : public ReferenceCountedObject<OptimizationSolver<T> >,
                            public ParallelObject
 {
 public:
@@ -70,7 +68,7 @@ public:
   virtual ~OptimizationSolver ();
 
   /**
-   * Builds a \p NonlinearSolver using the nonlinear solver package specified by
+   * Builds an \p OptimizationSolver using the package specified by
    * \p solver_package
    */
   static UniquePtr<OptimizationSolver<T> > build(sys_type& s,
@@ -98,7 +96,7 @@ public:
   virtual void solve () = 0;
 
   /**
-   * Prints a useful message about why the latest nonlinear solve
+   * Prints a useful message about why the latest optimization solve
    * con(di)verged.
    */
   virtual void print_converged_reason() { libmesh_not_implemented(); }

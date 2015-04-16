@@ -97,7 +97,7 @@ public:
   virtual void solve ();
 
 //  /**
-//   * Prints a useful message about why the latest nonlinear solve
+//   * Prints a useful message about why the latest optimization solve
 //   * con(di)verged.
 //   */
 //  virtual void print_converged_reason();

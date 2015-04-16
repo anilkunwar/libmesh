@@ -80,18 +80,13 @@ void OptimizationSystem::initialize_equality_constraints_storage(
 
 void OptimizationSystem::solve ()
 {
-  // Log how long the optimization solve takes.
   START_LOG("solve()", "OptimizationSystem");
 
   optimization_solver->init();
-
-  // Solve the optimization problem.
   optimization_solver->solve ();
 
-  // Stop logging the nonlinear solve
   STOP_LOG("solve()", "OptimizationSystem");
 
-  // Update the system after the solve
   this->update();
 }
 

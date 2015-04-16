@@ -171,7 +171,7 @@ public:
   virtual void reinit ();
 
   /**
-   * Assembles & solves the nonlinear system R(x) = 0.
+   * Solves the optimization problem.
    */
   virtual void solve ();
 
