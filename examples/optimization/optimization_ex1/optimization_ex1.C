@@ -21,8 +21,8 @@
 #include "libmesh/zero_function.h"
 #include "libmesh/dirichlet_boundaries.h"
 
-#include "optimization_system.h"
-#include "optimization_solver.h"
+#include "libmesh/optimization_system.h"
+#include "libmesh/optimization_solver.h"
 
 // Bring in everything from the libMesh namespace
 using namespace libMesh;
@@ -80,15 +80,6 @@ public:
     const NumericVector<Number>& soln,
     SparseMatrix<Number>& H_f,
     OptimizationSystem& /*sys*/);
-
-//  /**
-//   * Evaluate the vector C_eq(x) that defines equality
-//   * constraints according to C_eq(x) = 0.
-//   */
-//  virtual void equality_constraints (
-//    const NumericVector<Number>& soln,
-//    NumericVector<Number>& C_eq,
-//    OptimizationSystem& /*sys*/);
 
   /**
    * Sparse matrix for storing the matrix A. We use
@@ -223,35 +214,20 @@ void AssembleOptimization::hessian (
   H_f.add(1., *A_matrix);
 }
 
-//void AssembleOptimization::equality_constraints (
-//  const NumericVector<Number>& soln,
-//  NumericVector<Number>& C_eq,
-//  OptimizationSystem& /*sys*/)
-//{
-//  dof_id_type count = 0;
-//  for(dof_id_type dof_index=0; dof_index<_sys.n_dofs(); dof_index++)
-//  {
-//    if(_sys.get_dof_map().is_constrained_dof(dof_index))
-//    {
-//      C_eq.set(count, soln(dof_index));
-//      count++;
-//    }
-//  }
-//}
-
 
 int main (int argc, char** argv)
 {
   LibMeshInit init (argc, argv);
 
-  GetPot infile("tao_test.in");
+  GetPot infile("optimization_ex1.in");
   const std::string approx_order = infile("approx_order", "FIRST");
   const std::string fe_family = infile("fe_family", "LAGRANGE");
+  const unsigned int n_elem = infile("n_elem", 10);
 
   Mesh mesh(init.comm());
   MeshTools::Generation::build_square (mesh,
-                                       10,
-                                       10,
+                                       n_elem,
+                                       n_elem,
                                        -1., 1.,
                                        -1., 1.,
                                        QUAD9);
@@ -272,10 +248,6 @@ int main (int argc, char** argv)
   system.optimization_solver->objective_object     = &assemble_opt;
   system.optimization_solver->gradient_object      = &assemble_opt;
   system.optimization_solver->hessian_object       = &assemble_opt;
-
-  // Seems like -tao_type ipm is the only solver that can handle
-  // equality constraints.
-//  system.optimization_solver->equality_constraints = &assemble_opt;
 
   // system.matrix and system.rhs are used for the gradient and Hessian,
   // so in this case we add an extra matrix and vector to store A and F.

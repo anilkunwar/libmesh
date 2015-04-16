@@ -1,2 +1,3 @@
+n_elem = 10
 approx_order = SECOND
 fe_family = LAGRANGE
