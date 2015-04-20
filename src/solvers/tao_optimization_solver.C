@@ -19,7 +19,7 @@
 
 #include "libmesh/libmesh_common.h"
 
-#ifdef LIBMESH_HAVE_PETSC
+#if defined(LIBMESH_HAVE_PETSC) && !defined(LIBMESH_USE_COMPLEX_NUMBERS)
 
 
 // C++ includes
@@ -434,4 +434,4 @@ template class TaoOptimizationSolver<Number>;
 
 
 
-#endif // #ifdef LIBMESH_HAVE_PETSC
+#endif // #if defined(LIBMESH_HAVE_PETSC) && !defined(LIBMESH_USE_COMPLEX_NUMBERS)

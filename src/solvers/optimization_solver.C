@@ -49,7 +49,7 @@ OptimizationSolver<T>::~OptimizationSolver ()
 }
 
 
-#if defined(LIBMESH_HAVE_PETSC)
+#if defined(LIBMESH_HAVE_PETSC) && !defined(LIBMESH_USE_COMPLEX_NUMBERS)
 template <typename T>
 UniquePtr<OptimizationSolver<T> >
 OptimizationSolver<T>::build(sys_type& s, const SolverPackage solver_package)
@@ -58,10 +58,8 @@ OptimizationSolver<T>::build(sys_type& s, const SolverPackage solver_package)
   switch (solver_package)
     {
 
-#ifdef LIBMESH_HAVE_PETSC
     case PETSC_SOLVERS:
       return UniquePtr<OptimizationSolver<T> >(new TaoOptimizationSolver<T>(s));
-#endif // LIBMESH_HAVE_PETSC
 
     default:
       libmesh_error_msg("ERROR:  Unrecognized solver package: " << solver_package);
@@ -71,7 +69,7 @@ OptimizationSolver<T>::build(sys_type& s, const SolverPackage solver_package)
   return UniquePtr<OptimizationSolver<T> >();
 }
 
-#else // LIBMESH_HAVE_PETSC
+#else // #if defined(LIBMESH_HAVE_PETSC) && !defined(LIBMESH_USE_COMPLEX_NUMBERS)
 
 template <typename T>
 UniquePtr<OptimizationSolver<T> >

@@ -23,7 +23,7 @@
 #include "libmesh/libmesh_config.h"
 
 // Petsc include files.
-#ifdef LIBMESH_HAVE_PETSC
+#if defined(LIBMESH_HAVE_PETSC) && !defined(LIBMESH_USE_COMPLEX_NUMBERS)
 
 // Local includes
 #include "libmesh/petsc_macro.h"
@@ -138,5 +138,5 @@ private:
 } // namespace libMesh
 
 
-#endif // #ifdef LIBMESH_HAVE_PETSC
+#endif // #if defined(LIBMESH_HAVE_PETSC) && !defined(LIBMESH_USE_COMPLEX_NUMBERS)
 #endif // LIBMESH_TAO_OPTIMIZATION_SOLVER_H
