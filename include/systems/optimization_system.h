@@ -148,6 +148,8 @@ public:
   /**
    * Initialize the vector and matrix that store the equality constraint
    * and corresponding Jacobian.
+   * \p n_eq_constraints is the number of constraints
+   * \p n_dofs_per_constraint defines the "sparsity pattern" for the jacobian
    */
   void initialize_equality_constraint_storage(
     unsigned int n_eq_constraints,
@@ -177,10 +179,12 @@ public:
 
   /**
    * Initialize storage for the \p n_eq_constraints
-   * equality constraints.
+   * equality constraints, and the corresponding
+   * n_eq_constraints x n_dofs Jacobian.
    */
   void initialize_equality_constraints_storage(
-    unsigned int n_eq_constraints);
+    unsigned int n_eq_constraints,
+    const std::vector<unsigned int>& n_dofs_per_constraint);
 
   /**
    * @returns \p "Optimization".  Helps in identifying
@@ -197,6 +201,11 @@ public:
    * The vector that stores equality constraints.
    */
   UniquePtr<NumericVector<Number> > C_eq;
+
+  /**
+   * The sparse matrix that stores the Jacobian of C_eq.
+   */
+  UniquePtr<SparseMatrix<Number> > C_eq_jac;
 
 };
 

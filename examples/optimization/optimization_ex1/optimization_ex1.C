@@ -282,10 +282,6 @@ int main (int argc, char** argv)
 
   assemble_opt.assemble_A_and_F();
 
-  // Let's assume that we impose an equality constraint
-  // for every constrained dof in the system
-  system.initialize_equality_constraints_storage(system.n_constrained_dofs());
-
   // We need to close the matrix so that we can use it to store the
   // Hessian during the solve.
   system.matrix->close();

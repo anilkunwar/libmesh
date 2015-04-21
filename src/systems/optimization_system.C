@@ -24,6 +24,7 @@
 #include "libmesh/libmesh_logging.h"
 #include "libmesh/sparse_matrix.h"
 #include "libmesh/numeric_vector.h"
+#include "libmesh/dof_map.h"
 #include "libmesh/optimization_solver.h"
 #include "libmesh/optimization_system.h"
 
@@ -38,7 +39,8 @@ OptimizationSystem::OptimizationSystem (EquationSystems& es,
 
   Parent(es, name_in, number_in),
   optimization_solver(OptimizationSolver<Number>::build(*this)),
-  C_eq(NumericVector<Number>::build(this->comm()))
+  C_eq(NumericVector<Number>::build(this->comm())),
+  C_eq_jac(SparseMatrix<Number>::build(this->comm()))
 {
 }
 
@@ -72,9 +74,26 @@ void OptimizationSystem::reinit ()
 
 
 void OptimizationSystem::initialize_equality_constraints_storage(
-  unsigned int n_eq_constraints)
+  unsigned int n_eq_constraints,
+  const std::vector<unsigned int>& n_dofs_per_constraint)
 {
   C_eq->init(n_eq_constraints, false, SERIAL);
+
+  // roughly assign 1/n_processors rows to each processor
+  unsigned int n_procs = comm().size();
+  unsigned int n_local_rows = n_eq_constraints / n_procs;
+
+  // Assign any extra rows to the first processor
+  if(comm().rank() == 0)
+  {
+    n_local_rows += n_eq_constraints % n_procs;
+  }
+
+  C_eq_jac->init(
+    n_eq_constraints,
+    get_dof_map().n_dofs(),
+    n_local_rows,
+    get_dof_map().n_local_dofs());
 }
 
 
