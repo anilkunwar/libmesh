@@ -96,11 +96,11 @@ public:
    */
   virtual void solve ();
 
-//  /**
-//   * Prints a useful message about why the latest optimization solve
-//   * con(di)verged.
-//   */
-//  virtual void print_converged_reason();
+  /**
+   * Prints a useful message about why the latest optimization solve
+   * con(di)verged.
+   */
+  virtual void print_converged_reason();
 
   /**
    * Returns the currently-available (or most recently obtained, if the Tao object has

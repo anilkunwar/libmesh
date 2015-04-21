@@ -385,29 +385,18 @@ void TaoOptimizationSolver<T>::solve ()
   ierr = TaoGetConvergedReason(_tao, &_reason);
   LIBMESH_CHKERRABORT(ierr);
 
-  // Print termination information
-  libMesh::out << "Converged reason: " << _reason << std::endl;
-  if (_reason <= 0)
-  {
-    libMesh::out << "Tao failed to converge." << std::endl;
-  }
-  else
-  {
-    libMesh::out << "Tao converged." << std::endl;
-  }
-
   STOP_LOG("solve()", "TaoOptimizationSolver");
 }
 
 
 
-//template <typename T>
-//void TaoOptimizationSolver<T>::print_converged_reason()
-//{
-//
-//  libMesh::out << "Tao optimization solver convergence/divergence reason: "
-//               << TaoConvergedReasons[this->get_converged_reason()] << std::endl;
-//}
+template <typename T>
+void TaoOptimizationSolver<T>::print_converged_reason()
+{
+
+  libMesh::out << "Tao optimization solver convergence/divergence reason: "
+               << TaoConvergedReasons[this->get_converged_reason()] << std::endl;
+}
 
 
 

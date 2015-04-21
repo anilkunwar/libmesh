@@ -20,7 +20,6 @@
 #include "libmesh/getpot.h"
 #include "libmesh/zero_function.h"
 #include "libmesh/dirichlet_boundaries.h"
-
 #include "libmesh/optimization_system.h"
 #include "libmesh/optimization_solver.h"
 
@@ -291,6 +290,9 @@ int main (int argc, char** argv)
   // Hessian during the solve.
   system.matrix->close();
   system.solve();
+  
+  // Print convergence information
+  system.optimization_solver->print_converged_reason();
 
   std::stringstream filename;
   ExodusII_IO (mesh).write_equation_systems(
