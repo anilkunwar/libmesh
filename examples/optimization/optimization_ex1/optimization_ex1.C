@@ -219,6 +219,10 @@ int main (int argc, char** argv)
 {
   LibMeshInit init (argc, argv);
 
+#ifndef LIBMESH_HAVE_PETSC_TAO
+  libmesh_example_requires(false, "PETSc >= 3.5.0 with built-in TAO support");
+#endif
+
   GetPot infile("optimization_ex1.in");
   const std::string approx_order = infile("approx_order", "FIRST");
   const std::string fe_family = infile("fe_family", "LAGRANGE");
