@@ -77,23 +77,34 @@ void OptimizationSystem::initialize_equality_constraints_storage(
   unsigned int n_eq_constraints,
   const std::vector<unsigned int>& n_dofs_per_constraint)
 {
-  C_eq->init(n_eq_constraints, false, SERIAL);
-
-  // roughly assign 1/n_processors rows to each processor
+  // Assign rows to each processor as evenly as possible
   unsigned int n_procs = comm().size();
   unsigned int n_local_rows = n_eq_constraints / n_procs;
-
-  // Assign any extra rows to the first processor
-  if(comm().rank() == 0)
+  if(comm().rank() < (n_eq_constraints % n_procs))
   {
-    n_local_rows += n_eq_constraints % n_procs;
+    n_local_rows++;
+  }
+
+  C_eq->init(n_eq_constraints, n_local_rows, false, PARALLEL);
+
+  // Get the maximum number of non-zeros per row
+  unsigned int max_nnz = 0;
+  for(unsigned int i=0; i<n_dofs_per_constraint.size(); i++)
+  {
+    unsigned int nnz = n_dofs_per_constraint[i];
+    if(nnz > max_nnz)
+    {
+      max_nnz = nnz;
+    }
   }
 
   C_eq_jac->init(
     n_eq_constraints,
     get_dof_map().n_dofs(),
     n_local_rows,
-    get_dof_map().n_local_dofs());
+    get_dof_map().n_local_dofs(),
+    max_nnz,
+    max_nnz);
 }
 
 
