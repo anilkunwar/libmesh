@@ -45,7 +45,7 @@ extern "C"
   //---------------------------------------------------------------
   // This function is called by Tao to evaluate objective function at x
   PetscErrorCode
-  __libmesh_tao_objective (Tao tao, Vec x, PetscReal* objective, void *ctx)
+  __libmesh_tao_objective (Tao /*tao*/, Vec x, PetscReal* objective, void *ctx)
   {
     START_LOG("objective()", "TaoOptimizationSolver");
 
@@ -96,7 +96,7 @@ extern "C"
   //---------------------------------------------------------------
   // This function is called by Tao to evaluate the gradient at x
   PetscErrorCode
-  __libmesh_tao_gradient(Tao tao, Vec x, Vec g, void *ctx)
+  __libmesh_tao_gradient(Tao /*tao*/, Vec x, Vec g, void *ctx)
   {
     START_LOG("gradient()", "TaoOptimizationSolver");
 
@@ -153,7 +153,7 @@ extern "C"
   //---------------------------------------------------------------
   // This function is called by Tao to evaluate the Hessian at x
   PetscErrorCode
-  __libmesh_tao_hessian(Tao tao, Vec x, Mat h, Mat pc, void *ctx)
+  __libmesh_tao_hessian(Tao /*tao*/, Vec x, Mat h, Mat pc, void *ctx)
   {
     START_LOG("hessian()", "TaoOptimizationSolver");
 
@@ -214,7 +214,7 @@ extern "C"
   //---------------------------------------------------------------
   // This function is called by Tao to evaluate the equality constraints at x
   PetscErrorCode
-  __libmesh_tao_equality_constraints(Tao tao, Vec x, Vec ce, void *ctx)
+  __libmesh_tao_equality_constraints(Tao /*tao*/, Vec x, Vec ce, void *ctx)
   {
     START_LOG("equality_constraints()", "TaoOptimizationSolver");
 
@@ -334,7 +334,7 @@ void TaoOptimizationSolver<T>::solve ()
   this->system().solution->zero();
 
   PetscMatrix<T>* hessian  = cast_ptr<PetscMatrix<T>*>(this->system().matrix);
-  PetscVector<T>* gradient = cast_ptr<PetscVector<T>*>(this->system().rhs);
+  // PetscVector<T>* gradient = cast_ptr<PetscVector<T>*>(this->system().rhs);
   PetscVector<T>* x        = cast_ptr<PetscVector<T>*>(this->system().solution.get());
   PetscVector<T>* ce       = cast_ptr<PetscVector<T>*>(this->system().C_eq.get());
 

@@ -206,7 +206,7 @@ void AssembleOptimization::gradient (
 
 
 void AssembleOptimization::hessian (
-  const NumericVector<Number>& soln,
+  const NumericVector<Number>& /*soln*/,
   SparseMatrix<Number>& H_f,
   OptimizationSystem& /*sys*/)
 {
