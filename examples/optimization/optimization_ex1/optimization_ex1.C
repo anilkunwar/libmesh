@@ -1,3 +1,30 @@
+/* The libMesh Finite Element Library. */
+/* Copyright (C) 2003  Benjamin S. Kirk */
+
+/* This library is free software; you can redistribute it and/or */
+/* modify it under the terms of the GNU Lesser General Public */
+/* License as published by the Free Software Foundation; either */
+/* version 2.1 of the License, or (at your option) any later version. */
+
+/* This library is distributed in the hope that it will be useful, */
+/* but WITHOUT ANY WARRANTY; without even the implied warranty of */
+/* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU */
+/* Lesser General Public License for more details. */
+
+/* You should have received a copy of the GNU Lesser General Public */
+/* License along with this library; if not, write to the Free Software */
+/* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+
+// <h1>Optimization Example 1 - Optimization of a quadratic objective function</h1>
+//
+// In this example we demonstrate how to use OptimizationSystem to solve the
+// optimization problem:
+//   min_U 0.5*U^T A U - U^T F
+// We enforce Dirichlet constraints on U so that the minimization is well-posed.
+// But note that we do not use OptimizationSystem's interface for imposing constraints
+// in this case, so we can use an unconstrained solver (e.g. TAO's "Newton's method
+// with line search" for unconstrained optimization is the default choice).
+
 // C++ include files that we need
 #include <iostream>
 
@@ -248,9 +275,9 @@ int main (int argc, char** argv)
                        Utility::string_to_enum<Order>   (approx_order),
                        Utility::string_to_enum<FEFamily>(fe_family));
 
-  system.optimization_solver->objective_object     = &assemble_opt;
-  system.optimization_solver->gradient_object      = &assemble_opt;
-  system.optimization_solver->hessian_object       = &assemble_opt;
+  system.optimization_solver->objective_object = &assemble_opt;
+  system.optimization_solver->gradient_object  = &assemble_opt;
+  system.optimization_solver->hessian_object   = &assemble_opt;
 
   // system.matrix and system.rhs are used for the gradient and Hessian,
   // so in this case we add an extra matrix and vector to store A and F.
@@ -261,8 +288,8 @@ int main (int argc, char** argv)
   assemble_opt.A_matrix = &system.get_matrix("A_matrix");
   assemble_opt.F_vector = &system.get_vector("F_vector");
 
-  // Apply Dirichlet constraints. We can then use DofMap::is_constrained_dof
-  // to figure out which dofs we want to apply equality constraints to.
+  // Apply Dirichlet constraints. This will be used to apply constraints
+  // to the objective function, gradient and Hessian.
   std::set<boundary_id_type> boundary_ids;
   boundary_ids.insert(0);
   boundary_ids.insert(1);
