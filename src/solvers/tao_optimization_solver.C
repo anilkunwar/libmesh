@@ -160,7 +160,7 @@ extern "C"
     PetscErrorCode ierr = 0;
     
     libmesh_assert(x);
-    libmesh_assert(hessian);
+    libmesh_assert(h);
     libmesh_assert(pc);
     libmesh_assert(ctx);
 
