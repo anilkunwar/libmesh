@@ -145,15 +145,23 @@ public:
                                        NumericVector<Number>& C_eq,
                                        sys_type& S) = 0;
   };
+
   /**
-   * Initialize the vector and matrix that store the equality constraint
-   * and corresponding Jacobian.
-   * \p n_eq_constraints is the number of constraints
-   * \p n_dofs_per_constraint defines the "sparsity pattern" for the jacobian
+   * Abstract base class to be used to calculate the Jacobian of the
+   * equality constraints.
    */
-  void initialize_equality_constraint_storage(
-    unsigned int n_eq_constraints,
-    std::vector<unsigned int> n_dofs_per_constraint);
+  class ComputeEqualityConstraintsJacobian
+  {
+  public:
+    virtual ~ComputeEqualityConstraintsJacobian () {}
+
+    /**
+     * This function will be called to evaluate the Jacobian of C_eq(X).
+     */
+    virtual void equality_constraints_jacobian (const NumericVector<Number>& X,
+                                                SparseMatrix<Number>& C_eq_jac,
+                                                sys_type& S) = 0;
+  };
 
   /**
    * @returns a clever pointer to the system.
@@ -178,12 +186,13 @@ public:
   virtual void solve ();
 
   /**
-   * Initialize storage for the \p n_eq_constraints
-   * equality constraints, and the corresponding
-   * n_eq_constraints x n_dofs Jacobian.
+   * Initialize storage for the equality constraints, and the 
+   * corresponding Jacobian. The length of \p n_dofs_per_constraint
+   * indicates the number of constraints that will be imposed,
+   * and n_dofs_per_constraint[i] gives the number of non-zeros
+   * in row i of the Jacobian.
    */
   void initialize_equality_constraints_storage(
-    unsigned int n_eq_constraints,
     const std::vector<unsigned int>& n_dofs_per_constraint);
 
   /**

@@ -123,7 +123,12 @@ public:
    * Object that computes the equality constraints vector C_eq(X).
    * This will lead to the constraints C_eq(X) = 0 being imposed.
    */
-  OptimizationSystem::ComputeEqualityConstraints *equality_constraints;
+  OptimizationSystem::ComputeEqualityConstraints *equality_constraints_object;
+
+  /**
+   * Object that computes the Jacobian of C_eq(X).
+   */
+  OptimizationSystem::ComputeEqualityConstraintsJacobian *equality_constraints_jacobian_object;
 
   /**
    * @returns a constant reference to the system we are using to

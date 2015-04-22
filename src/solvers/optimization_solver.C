@@ -33,7 +33,8 @@ OptimizationSolver<T>::OptimizationSolver (sys_type& s) :
   objective_object(NULL),
   gradient_object(NULL),
   hessian_object(NULL),
-  equality_constraints(NULL),
+  equality_constraints_object(NULL),
+  equality_constraints_jacobian_object(NULL),
   _system(s),
   _is_initialized (false)
 {

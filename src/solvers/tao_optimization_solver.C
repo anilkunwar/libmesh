@@ -184,7 +184,7 @@ extern "C"
     // Swap back
     X.swap(X_sys);
 
-    // Let's also set up matrices that will be
+    // Let's also wrap pc and h in PetscMatrix objects for convenience
     PetscMatrix<Number> PC(pc, sys.comm());
     PetscMatrix<Number> hessian(h, sys.comm());
     PC.attach_dof_map(sys.get_dof_map());
@@ -244,16 +244,16 @@ extern "C"
     // Swap back
     X.swap(X_sys);
 
-    // We'll also pass the gradient in to the assembly routine
+    // We'll also pass the constraints vector ce into the assembly routine
     // so let's make a PETSc vector for that too.
     PetscVector<Number> eq_constraints(ce, sys.comm());
 
     // Clear the gradient prior to assembly
     eq_constraints.zero();
 
-    if (solver->equality_constraints != NULL)
+    if (solver->equality_constraints_object != NULL)
     {
-      solver->equality_constraints->equality_constraints(
+      solver->equality_constraints_object->equality_constraints(
         *(sys.current_local_solution), eq_constraints, sys);
     }
     else
@@ -264,6 +264,62 @@ extern "C"
     eq_constraints.close();
 
     STOP_LOG("equality_constraints()", "TaoOptimizationSolver");
+
+    return ierr;
+  }
+
+  //---------------------------------------------------------------
+  // This function is called by Tao to evaluate the Jacobain of the
+  // equality constraints at x
+  PetscErrorCode
+  __libmesh_tao_equality_constraints_jacobian(Tao /*tao*/, Vec x, Mat J, Mat Jpre, void *ctx)
+  {
+    START_LOG("equality_constraints_jacobian()", "TaoOptimizationSolver");
+
+    PetscErrorCode ierr = 0;
+    
+    libmesh_assert(x);
+    libmesh_assert(J);
+    libmesh_assert(Jpre);
+
+    // ctx should be a pointer to the solver (it was passed in as void*)
+    TaoOptimizationSolver<Number>* solver =
+      static_cast<TaoOptimizationSolver<Number>*> (ctx);
+
+    OptimizationSystem &sys = solver->system();
+
+    // We'll use current_local_solution below, so let's ensure that it's consistent
+    // with the vector x that was passed in.
+    PetscVector<Number>& X_sys = *cast_ptr<PetscVector<Number>*>(sys.solution.get());
+    PetscVector<Number> X(x, sys.comm());
+
+    // Perform a swap so that sys.solution points to X
+    X.swap(X_sys);
+    // Impose constraints on X
+    sys.get_dof_map().enforce_constraints_exactly(sys);
+    // Update sys.current_local_solution based on X
+    sys.update();
+    // Swap back
+    X.swap(X_sys);
+
+    // Let's also wrap J and Jpre in PetscMatrix objects for convenience
+    PetscMatrix<Number> J_petsc(J, sys.comm());
+    PetscMatrix<Number> Jpre_petsc(Jpre, sys.comm());
+
+    if (solver->equality_constraints_jacobian_object != NULL)
+    {
+      solver->equality_constraints_jacobian_object->equality_constraints_jacobian(
+        *(sys.current_local_solution), J_petsc, sys);
+    }
+    else
+    {
+      libmesh_error_msg("Constraints function not defined in __libmesh_tao_equality_constraints_jacobian");
+    }
+
+    J_petsc.close();
+    Jpre_petsc.close();
+
+    STOP_LOG("equality_constraints_jacobian()", "TaoOptimizationSolver");
 
     return ierr;
   }
@@ -337,6 +393,7 @@ void TaoOptimizationSolver<T>::solve ()
   // PetscVector<T>* gradient = cast_ptr<PetscVector<T>*>(this->system().rhs);
   PetscVector<T>* x        = cast_ptr<PetscVector<T>*>(this->system().solution.get());
   PetscVector<T>* ce       = cast_ptr<PetscVector<T>*>(this->system().C_eq.get());
+  PetscMatrix<T>* ce_jac   = cast_ptr<PetscMatrix<T>*>(this->system().C_eq_jac.get());
 
   // Set the starting guess to zero.
   x->zero();
@@ -367,9 +424,20 @@ void TaoOptimizationSolver<T>::solve ()
   }
 
   // Optionally set equality constraints
-  if ( this->equality_constraints )
+  if ( this->equality_constraints_object )
   {
     ierr = TaoSetEqualityConstraintsRoutine(_tao, ce->vec(), __libmesh_tao_equality_constraints, this);
+    LIBMESH_CHKERRABORT(ierr);
+  }
+
+  // Optionally set equality constraints
+  if ( this->equality_constraints_jacobian_object )
+  {
+    ierr = TaoSetJacobianEqualityRoutine(_tao,
+                                         ce_jac->mat(),
+                                         ce_jac->mat(),
+                                         __libmesh_tao_equality_constraints_jacobian,
+                                         this);
     LIBMESH_CHKERRABORT(ierr);
   }
 

@@ -74,9 +74,10 @@ void OptimizationSystem::reinit ()
 
 
 void OptimizationSystem::initialize_equality_constraints_storage(
-  unsigned int n_eq_constraints,
   const std::vector<unsigned int>& n_dofs_per_constraint)
 {
+  unsigned int n_eq_constraints = n_dofs_per_constraint.size();
+
   // Assign rows to each processor as evenly as possible
   unsigned int n_procs = comm().size();
   unsigned int n_local_rows = n_eq_constraints / n_procs;
@@ -89,7 +90,7 @@ void OptimizationSystem::initialize_equality_constraints_storage(
 
   // Get the maximum number of non-zeros per row
   unsigned int max_nnz = 0;
-  for(unsigned int i=0; i<n_dofs_per_constraint.size(); i++)
+  for(unsigned int i=0; i<n_eq_constraints; i++)
   {
     unsigned int nnz = n_dofs_per_constraint[i];
     if(nnz > max_nnz)
