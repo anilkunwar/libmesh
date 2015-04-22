@@ -131,6 +131,17 @@ public:
   OptimizationSystem::ComputeEqualityConstraintsJacobian *equality_constraints_jacobian_object;
 
   /**
+   * Object that computes the inequality constraints vector C_ineq(X).
+   * This will lead to the constraints C_ineq(X) >= 0 being imposed.
+   */
+  OptimizationSystem::ComputeInequalityConstraints *inequality_constraints_object;
+
+  /**
+   * Object that computes the Jacobian of C_ineq(X).
+   */
+  OptimizationSystem::ComputeInequalityConstraintsJacobian *inequality_constraints_jacobian_object;
+
+  /**
    * @returns a constant reference to the system we are using to
    * define the optimization problem.
    */

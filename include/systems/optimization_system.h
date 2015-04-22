@@ -164,6 +164,40 @@ public:
   };
 
   /**
+   * Abstract base class to be used to calculate the inequality constraints.
+   */
+  class ComputeInequalityConstraints
+  {
+  public:
+    virtual ~ComputeInequalityConstraints () {}
+
+    /**
+     * This function will be called to evaluate the equality constraints
+     * vector C_ineq(X). This will impose the constraints C_ineq(X) >= 0.
+     */
+    virtual void inequality_constraints (const NumericVector<Number>& X,
+                                         NumericVector<Number>& C_ineq,
+                                         sys_type& S) = 0;
+  };
+
+  /**
+   * Abstract base class to be used to calculate the Jacobian of the
+   * inequality constraints.
+   */
+  class ComputeInequalityConstraintsJacobian
+  {
+  public:
+    virtual ~ComputeInequalityConstraintsJacobian () {}
+
+    /**
+     * This function will be called to evaluate the Jacobian of C_ineq(X).
+     */
+    virtual void inequality_constraints_jacobian (const NumericVector<Number>& X,
+                                                  SparseMatrix<Number>& C_ineq_jac,
+                                                  sys_type& S) = 0;
+  };
+
+  /**
    * @returns a clever pointer to the system.
    */
   sys_type & system () { return *this; }
@@ -196,6 +230,13 @@ public:
     const std::vector<unsigned int>& n_dofs_per_constraint);
 
   /**
+   * Initialize storage for the inequality constraints, as per
+   * initialize_equality_constraints_storage.
+   */
+  void initialize_inequality_constraints_storage(
+    const std::vector<unsigned int>& n_dofs_per_constraint);
+
+  /**
    * @returns \p "Optimization".  Helps in identifying
    * the system type in an equation system file.
    */
@@ -215,6 +256,16 @@ public:
    * The sparse matrix that stores the Jacobian of C_eq.
    */
   UniquePtr<SparseMatrix<Number> > C_eq_jac;
+
+  /**
+   * The vector that stores inequality constraints.
+   */
+  UniquePtr<NumericVector<Number> > C_ineq;
+
+  /**
+   * The sparse matrix that stores the Jacobian of C_ineq.
+   */
+  UniquePtr<SparseMatrix<Number> > C_ineq_jac;
 
 };
 

@@ -40,7 +40,9 @@ OptimizationSystem::OptimizationSystem (EquationSystems& es,
   Parent(es, name_in, number_in),
   optimization_solver(OptimizationSolver<Number>::build(*this)),
   C_eq(NumericVector<Number>::build(this->comm())),
-  C_eq_jac(SparseMatrix<Number>::build(this->comm()))
+  C_eq_jac(SparseMatrix<Number>::build(this->comm())),
+  C_ineq(NumericVector<Number>::build(this->comm())),
+  C_ineq_jac(SparseMatrix<Number>::build(this->comm()))
 {
 }
 
@@ -101,6 +103,42 @@ void OptimizationSystem::initialize_equality_constraints_storage(
 
   C_eq_jac->init(
     n_eq_constraints,
+    get_dof_map().n_dofs(),
+    n_local_rows,
+    get_dof_map().n_local_dofs(),
+    max_nnz,
+    max_nnz);
+}
+
+
+void OptimizationSystem::initialize_inequality_constraints_storage(
+  const std::vector<unsigned int>& n_dofs_per_constraint)
+{
+  unsigned int n_ineq_constraints = n_dofs_per_constraint.size();
+
+  // Assign rows to each processor as evenly as possible
+  unsigned int n_procs = comm().size();
+  unsigned int n_local_rows = n_ineq_constraints / n_procs;
+  if(comm().rank() < (n_ineq_constraints % n_procs))
+  {
+    n_local_rows++;
+  }
+
+  C_ineq->init(n_ineq_constraints, n_local_rows, false, PARALLEL);
+
+  // Get the maximum number of non-zeros per row
+  unsigned int max_nnz = 0;
+  for(unsigned int i=0; i<n_ineq_constraints; i++)
+  {
+    unsigned int nnz = n_dofs_per_constraint[i];
+    if(nnz > max_nnz)
+    {
+      max_nnz = nnz;
+    }
+  }
+
+  C_ineq_jac->init(
+    n_ineq_constraints,
     get_dof_map().n_dofs(),
     n_local_rows,
     get_dof_map().n_local_dofs(),

@@ -59,7 +59,9 @@ class AssembleOptimization :
   public OptimizationSystem::ComputeGradient,
   public OptimizationSystem::ComputeHessian,
   public OptimizationSystem::ComputeEqualityConstraints,
-  public OptimizationSystem::ComputeEqualityConstraintsJacobian
+  public OptimizationSystem::ComputeEqualityConstraintsJacobian,
+  public OptimizationSystem::ComputeInequalityConstraints,
+  public OptimizationSystem::ComputeInequalityConstraintsJacobian
 {
 private:
 
@@ -119,6 +121,20 @@ public:
   virtual void equality_constraints_jacobian (const NumericVector<Number>& X,
                                               SparseMatrix<Number>& C_eq_jac,
                                               OptimizationSystem& /*sys*/);
+
+  /**
+   * Evaluate the inequality constraints.
+   */
+  virtual void inequality_constraints (const NumericVector<Number>& X,
+                                       NumericVector<Number>& C_ineq,
+                                       OptimizationSystem& /*sys*/);
+
+  /**
+   * Evaluate the inequality constraints Jacobian.
+   */
+  virtual void inequality_constraints_jacobian (const NumericVector<Number>& X,
+                                                SparseMatrix<Number>& C_ineq_jac,
+                                                OptimizationSystem& /*sys*/);
 
   /**
    * Sparse matrix for storing the matrix A. We use
@@ -261,6 +277,27 @@ void AssembleOptimization::equality_constraints_jacobian (
   C_eq_jac.set(2, 185, 1.);
 }
 
+void AssembleOptimization::inequality_constraints (
+  const NumericVector<Number>& X,
+  NumericVector<Number>& C_ineq,
+  OptimizationSystem& /*sys*/)
+{
+  C_ineq.zero();
+
+  C_ineq.set(0, X(200)*X(200) + X(201) - 50.);
+}
+
+void AssembleOptimization::inequality_constraints_jacobian (
+  const NumericVector<Number>& X,
+  SparseMatrix<Number>& C_ineq_jac,
+  OptimizationSystem& /*sys*/)
+{
+  C_ineq_jac.zero();
+
+  C_ineq_jac.set(0, 200, 2.*X(200));
+  C_ineq_jac.set(0, 201, 1.);
+}
+
 
 int main (int argc, char** argv)
 {
@@ -301,6 +338,8 @@ int main (int argc, char** argv)
   system.optimization_solver->hessian_object = &assemble_opt;
   system.optimization_solver->equality_constraints_object = &assemble_opt;
   system.optimization_solver->equality_constraints_jacobian_object = &assemble_opt;
+  system.optimization_solver->inequality_constraints_object = &assemble_opt;
+  system.optimization_solver->inequality_constraints_jacobian_object = &assemble_opt;
 
   // system.matrix and system.rhs are used for the gradient and Hessian,
   // so in this case we add an extra matrix and vector to store A and F.
@@ -317,11 +356,19 @@ int main (int argc, char** argv)
 
   assemble_opt.assemble_A_and_F();
 
-  std::vector<unsigned int> n_dofs_per_constraint;
-  n_dofs_per_constraint.push_back(1);
-  n_dofs_per_constraint.push_back(1);
-  n_dofs_per_constraint.push_back(2);
-  system.initialize_equality_constraints_storage(n_dofs_per_constraint);
+  {
+    std::vector<unsigned int> n_dofs_per_eq_constraint;
+    n_dofs_per_eq_constraint.push_back(1);
+    n_dofs_per_eq_constraint.push_back(1);
+    n_dofs_per_eq_constraint.push_back(2);
+    system.initialize_equality_constraints_storage(n_dofs_per_eq_constraint);
+  }
+
+  {
+    std::vector<unsigned int> n_dofs_per_ineq_constraint;
+    n_dofs_per_ineq_constraint.push_back(2);
+    system.initialize_inequality_constraints_storage(n_dofs_per_ineq_constraint);
+  }
 
   // We need to close the matrix so that we can use it to store the
   // Hessian during the solve.
