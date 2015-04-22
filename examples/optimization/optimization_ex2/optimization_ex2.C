@@ -265,7 +265,12 @@ void AssembleOptimization::hessian (
   // However, our inequality constraint is nonlinear, so it will contribute
   // to the Hessian matrix.
   sys.optimization_solver->get_dual_variables();
-  H_f.add(200, 200, 2. * (*sys.lambda_ineq)(0));
+  dof_id_type ineq_index = 0;
+  if( (sys.lambda_ineq->first_local_index() <= ineq_index) &&
+      (ineq_index < sys.lambda_ineq->last_local_index()) )
+  {
+    H_f.add(200, 200, 2. * (*sys.lambda_ineq)(0));
+  }
 }
 
 void AssembleOptimization::equality_constraints (
@@ -275,22 +280,55 @@ void AssembleOptimization::equality_constraints (
 {
   C_eq.zero();
 
-  C_eq.set(0, X(17));
-  C_eq.set(1, X(23));
-  C_eq.set(2, X(98) + X(185));
+  UniquePtr<NumericVector<Number> > X_localized =
+    NumericVector<Number>::build(X.comm());
+  X_localized->init(X.size(), false, SERIAL);
+  X.localize(*X_localized);
+
+  if( (C_eq.first_local_index() <= 0) &&
+      (0 < C_eq.last_local_index()) )
+  {
+    C_eq.set(0, (*X_localized)(17));
+  }
+
+  if( (C_eq.first_local_index() <= 1) &&
+      (1 < C_eq.last_local_index()) )
+  {
+    C_eq.set(1, (*X_localized)(23));
+  }
+
+  if( (C_eq.first_local_index() <= 2) &&
+      (2 < C_eq.last_local_index()) )
+  {
+    C_eq.set(2, (*X_localized)(98) + (*X_localized)(185));
+  }
 }
 
 void AssembleOptimization::equality_constraints_jacobian (
   const NumericVector<Number>& X,
   SparseMatrix<Number>& C_eq_jac,
-  OptimizationSystem& /*sys*/)
+  OptimizationSystem& sys)
 {
   C_eq_jac.zero();
 
-  C_eq_jac.set(0, 17, 1.);
-  C_eq_jac.set(1, 23, 1.);
-  C_eq_jac.set(2, 98, 1.);
-  C_eq_jac.set(2, 185, 1.);
+  if( (sys.C_eq->first_local_index() <= 0) &&
+      (0 < sys.C_eq->last_local_index()) )
+  {
+    C_eq_jac.set(0, 17, 1.);
+  }
+
+  if( (sys.C_eq->first_local_index() <= 1) &&
+      (1 < sys.C_eq->last_local_index()) )
+  {
+    C_eq_jac.set(1, 23, 1.);
+  }
+
+  if( (sys.C_eq->first_local_index() <= 2) &&
+      (2 < sys.C_eq->last_local_index()) )
+  {
+    C_eq_jac.set(2, 98, 1.);
+    C_eq_jac.set(2, 185, 1.);
+  }
 }
 
 void AssembleOptimization::inequality_constraints (
@@ -300,18 +338,36 @@ void AssembleOptimization::inequality_constraints (
 {
   C_ineq.zero();
 
-  C_ineq.set(0, X(200)*X(200) + X(201) - 5.);
+  UniquePtr<NumericVector<Number> > X_localized =
+    NumericVector<Number>::build(X.comm());
+  X_localized->init(X.size(), false, SERIAL);
+  X.localize(*X_localized);
+
+  if( (C_ineq.first_local_index() <= 0) &&
+      (0 < C_ineq.last_local_index()) )
+  {
+    C_ineq.set(0, (*X_localized)(200)*(*X_localized)(200) + (*X_localized)(201) - 5.);
+  }
 }
 
 void AssembleOptimization::inequality_constraints_jacobian (
   const NumericVector<Number>& X,
   SparseMatrix<Number>& C_ineq_jac,
-  OptimizationSystem& /*sys*/)
+  OptimizationSystem& sys)
 {
   C_ineq_jac.zero();
 
-  C_ineq_jac.set(0, 200, 2.*X(200));
-  C_ineq_jac.set(0, 201, 1.);
+  UniquePtr<NumericVector<Number> > X_localized =
+    NumericVector<Number>::build(X.comm());
+  X_localized->init(X.size(), false, SERIAL);
+  X.localize(*X_localized);
+
+  if( (sys.C_ineq->first_local_index() <= 0) &&
+      (0 < sys.C_ineq->last_local_index()) )
+  {
+    C_ineq_jac.set(0, 200, 2.* (*X_localized)(200));
+    C_ineq_jac.set(0, 201, 1.);
+  }
 }
 
 void AssembleOptimization::lower_and_upper_bounds (
@@ -319,7 +375,9 @@ void AssembleOptimization::lower_and_upper_bounds (
 {
   unsigned int n_dofs = sys.n_dofs();
 
-  for(unsigned int i=0; i<n_dofs; i++)
+  for(unsigned int i=sys.get_dof_map().first_dof();
+      i<sys.get_dof_map().end_dof();
+      i++)
   {
     sys.get_vector("lower_bounds").set(i,-2.);
     sys.get_vector("upper_bounds").set(i,2.);
