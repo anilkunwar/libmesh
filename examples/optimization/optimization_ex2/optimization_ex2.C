@@ -252,16 +252,20 @@ void AssembleOptimization::gradient (
 void AssembleOptimization::hessian (
   const NumericVector<Number>& /*soln*/,
   SparseMatrix<Number>& H_f,
-  OptimizationSystem& /*sys*/)
+  OptimizationSystem& sys)
 {
   H_f.zero();
   H_f.add(1., *A_matrix);
 
-  // Does TAO require the Hessian of the constraints to be added in here?
-  // Presumably it does, though it's not clear from the documentation.
-  // As a result, this needs to be updated to include:
-  //  \sum_i \lambda_i * Hessian(g_i),
-  // where g_i is the i^th constraint function.
+  // We also need to add the Hessian of the inequality and equality constraints,
+  //  \sum_i^n_eq lambda_eq_i H_eq_i + \sum_i^n_ineq lambda_ineq_i H_ineq_i
+  // where lambda_eq and lambda_ineq denote Lagrange multipliers associated
+  // with the equality and inequality constraints, respectively.
+  // In this example, our equality constraints are linear, hence H_eq_i = 0.
+  // However, our inequality constraint is nonlinear, so it will contribute
+  // to the Hessian matrix.
+  sys.optimization_solver->get_dual_variables();
+  H_f.add(200, 200, 2. * (*sys.lambda_ineq)(0));
 }
 
 void AssembleOptimization::equality_constraints (

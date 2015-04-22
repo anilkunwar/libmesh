@@ -96,6 +96,14 @@ public:
   virtual void solve () = 0;
 
   /**
+   * Get the current values of dual variables associated with
+   * inequality and equality constraints. The variables will
+   * be stored in _system.lambda_eq and _system.lambda_ineq.
+   */
+  virtual void get_dual_variables()
+  { libmesh_not_implemented(); }
+
+  /**
    * Prints a useful message about why the latest optimization solve
    * con(di)verged.
    */

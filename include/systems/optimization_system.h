@@ -289,6 +289,13 @@ public:
    */
   UniquePtr<SparseMatrix<Number> > C_ineq_jac;
 
+  /**
+   * Vectors to store the dual variables associated with equality
+   * and inequality constraints.
+   */
+  UniquePtr<NumericVector<Number> > lambda_eq;
+  UniquePtr<NumericVector<Number> > lambda_ineq;
+
 private:
 
   /**

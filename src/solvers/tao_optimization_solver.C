@@ -601,11 +601,32 @@ void TaoOptimizationSolver<T>::solve ()
 }
 
 
+template <typename T>
+void TaoOptimizationSolver<T>::get_dual_variables()
+{
+  START_LOG("get_dual_variables()", "TaoOptimizationSolver");
+
+  PetscVector<T>* lambda_eq_petsc =
+    cast_ptr<PetscVector<T>*>(this->system().lambda_eq.get());
+  PetscVector<T>* lambda_ineq_petsc =
+    cast_ptr<PetscVector<T>*>(this->system().lambda_ineq.get());
+
+  Vec lambda_eq_petsc_vec = lambda_eq_petsc->vec();
+  Vec lambda_ineq_petsc_vec = lambda_ineq_petsc->vec();
+
+  PetscErrorCode ierr = 0;
+  ierr = TaoGetDualVariables(_tao,
+                             &lambda_eq_petsc_vec,
+                             &lambda_ineq_petsc_vec);
+  LIBMESH_CHKERRABORT(ierr);
+
+  STOP_LOG("get_dual_variables()", "TaoOptimizationSolver");
+}
+
 
 template <typename T>
 void TaoOptimizationSolver<T>::print_converged_reason()
 {
-
   libMesh::out << "Tao optimization solver convergence/divergence reason: "
                << TaoConvergedReasons[this->get_converged_reason()] << std::endl;
 }

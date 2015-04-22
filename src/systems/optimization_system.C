@@ -43,6 +43,8 @@ OptimizationSystem::OptimizationSystem (EquationSystems& es,
   C_eq_jac(SparseMatrix<Number>::build(this->comm())),
   C_ineq(NumericVector<Number>::build(this->comm())),
   C_ineq_jac(SparseMatrix<Number>::build(this->comm())),
+  lambda_eq(NumericVector<Number>::build(this->comm())),
+  lambda_ineq(NumericVector<Number>::build(this->comm())),
   _apply_bounds(false)
 {
 }
@@ -100,6 +102,7 @@ void OptimizationSystem::initialize_equality_constraints_storage(
   }
 
   C_eq->init(n_eq_constraints, n_local_rows, false, PARALLEL);
+  lambda_eq->init(n_eq_constraints, n_local_rows, false, PARALLEL);
 
   // Get the maximum number of non-zeros per row
   unsigned int max_nnz = 0;
@@ -136,6 +139,7 @@ void OptimizationSystem::initialize_inequality_constraints_storage(
   }
 
   C_ineq->init(n_ineq_constraints, n_local_rows, false, PARALLEL);
+  lambda_ineq->init(n_ineq_constraints, n_local_rows, false, PARALLEL);
 
   // Get the maximum number of non-zeros per row
   unsigned int max_nnz = 0;
