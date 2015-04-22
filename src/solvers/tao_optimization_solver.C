@@ -509,6 +509,8 @@ void TaoOptimizationSolver<T>::solve ()
   PetscMatrix<T>* ceq_jac   = cast_ptr<PetscMatrix<T>*>(this->system().C_eq_jac.get());
   PetscVector<T>* cineq     = cast_ptr<PetscVector<T>*>(this->system().C_ineq.get());
   PetscMatrix<T>* cineq_jac = cast_ptr<PetscMatrix<T>*>(this->system().C_ineq_jac.get());
+  PetscVector<T>* lb        = cast_ptr<PetscVector<T>*>(&this->system().get_vector("lower_bounds"));
+  PetscVector<T>* ub        = cast_ptr<PetscVector<T>*>(&this->system().get_vector("upper_bounds"));
 
   // Set the starting guess to zero.
   x->zero();
@@ -538,14 +540,23 @@ void TaoOptimizationSolver<T>::solve ()
     LIBMESH_CHKERRABORT(ierr);
   }
 
-  // Optionally set equality constraints
+  if ( this->lower_and_upper_bounds_object )
+  {
+    // Need to actually compute the bounds vectors first
+    this->lower_and_upper_bounds_object->lower_and_upper_bounds(this->system());
+
+    ierr = TaoSetVariableBounds(_tao,
+                                lb->vec(),
+                                ub->vec());
+    LIBMESH_CHKERRABORT(ierr);
+  }
+
   if ( this->equality_constraints_object )
   {
     ierr = TaoSetEqualityConstraintsRoutine(_tao, ceq->vec(), __libmesh_tao_equality_constraints, this);
     LIBMESH_CHKERRABORT(ierr);
   }
 
-  // Optionally set equality constraints Jacobian
   if ( this->equality_constraints_jacobian_object )
   {
     ierr = TaoSetJacobianEqualityRoutine(_tao,

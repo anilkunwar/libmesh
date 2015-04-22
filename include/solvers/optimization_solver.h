@@ -142,6 +142,11 @@ public:
   OptimizationSystem::ComputeInequalityConstraintsJacobian *inequality_constraints_jacobian_object;
 
   /**
+   * Object that computes the lower and upper bounds vectors.
+   */
+  OptimizationSystem::ComputeLowerAndUpperBounds *lower_and_upper_bounds_object;
+
+  /**
    * @returns a constant reference to the system we are using to
    * define the optimization problem.
    */

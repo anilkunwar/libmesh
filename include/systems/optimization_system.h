@@ -198,6 +198,23 @@ public:
   };
 
   /**
+   * Abstract base class to be used to calculate the lower and upper
+   * bounds for all dofs in the system.
+   */
+  class ComputeLowerAndUpperBounds
+  {
+  public:
+    virtual ~ComputeLowerAndUpperBounds () {}
+
+    /**
+     * This function should update the following two vectors:
+     *   this->get_vector("lower_bounds"),
+     *   this->get_vector("upper_bounds").
+     */
+    virtual void lower_and_upper_bounds (sys_type& S) = 0;
+  };
+
+  /**
    * @returns a clever pointer to the system.
    */
   sys_type & system () { return *this; }
@@ -207,6 +224,11 @@ public:
    * the system.
    */
   virtual void clear ();
+
+  /**
+   * Initializes new data members of the system.
+   */
+  virtual void init_data ();
 
   /**
    * Reinitializes the member data fields associated with
@@ -266,6 +288,14 @@ public:
    * The sparse matrix that stores the Jacobian of C_ineq.
    */
   UniquePtr<SparseMatrix<Number> > C_ineq_jac;
+
+private:
+
+  /**
+   * Boolean to indicate whether or not the lower and upper bounds
+   * should be applied.
+   */
+  bool _apply_bounds;
 
 };
 

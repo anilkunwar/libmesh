@@ -37,6 +37,7 @@ OptimizationSolver<T>::OptimizationSolver (sys_type& s) :
   equality_constraints_jacobian_object(NULL),
   inequality_constraints_object(NULL),
   inequality_constraints_jacobian_object(NULL),
+  lower_and_upper_bounds_object(NULL),
   _system(s),
   _is_initialized (false)
 {

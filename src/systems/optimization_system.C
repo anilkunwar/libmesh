@@ -42,7 +42,8 @@ OptimizationSystem::OptimizationSystem (EquationSystems& es,
   C_eq(NumericVector<Number>::build(this->comm())),
   C_eq_jac(SparseMatrix<Number>::build(this->comm())),
   C_ineq(NumericVector<Number>::build(this->comm())),
-  C_ineq_jac(SparseMatrix<Number>::build(this->comm()))
+  C_ineq_jac(SparseMatrix<Number>::build(this->comm())),
+  _apply_bounds(false)
 {
 }
 
@@ -65,6 +66,16 @@ void OptimizationSystem::clear ()
   Parent::clear();
 }
 
+
+void OptimizationSystem::init_data ()
+{
+  this->add_vector("lower_bounds");
+  this->add_vector("upper_bounds");
+
+  Parent::init_data();
+
+  optimization_solver->clear();
+}
 
 
 void OptimizationSystem::reinit ()

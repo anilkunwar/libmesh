@@ -61,7 +61,8 @@ class AssembleOptimization :
   public OptimizationSystem::ComputeEqualityConstraints,
   public OptimizationSystem::ComputeEqualityConstraintsJacobian,
   public OptimizationSystem::ComputeInequalityConstraints,
-  public OptimizationSystem::ComputeInequalityConstraintsJacobian
+  public OptimizationSystem::ComputeInequalityConstraintsJacobian,
+  public OptimizationSystem::ComputeLowerAndUpperBounds
 {
 private:
 
@@ -135,6 +136,11 @@ public:
   virtual void inequality_constraints_jacobian (const NumericVector<Number>& X,
                                                 SparseMatrix<Number>& C_ineq_jac,
                                                 OptimizationSystem& /*sys*/);
+
+  /**
+   * Evaluate the lower and upper bounds vectors.
+   */
+  virtual void lower_and_upper_bounds (OptimizationSystem& sys);
 
   /**
    * Sparse matrix for storing the matrix A. We use
@@ -284,7 +290,7 @@ void AssembleOptimization::inequality_constraints (
 {
   C_ineq.zero();
 
-  C_ineq.set(0, X(200)*X(200) + X(201) - 50.);
+  C_ineq.set(0, X(200)*X(200) + X(201) - 5.);
 }
 
 void AssembleOptimization::inequality_constraints_jacobian (
@@ -298,6 +304,17 @@ void AssembleOptimization::inequality_constraints_jacobian (
   C_ineq_jac.set(0, 201, 1.);
 }
 
+void AssembleOptimization::lower_and_upper_bounds (
+  OptimizationSystem& sys)
+{
+  unsigned int n_dofs = sys.n_dofs();
+
+  for(unsigned int i=0; i<n_dofs; i++)
+  {
+    sys.get_vector("lower_bounds").set(i,-2.);
+    sys.get_vector("upper_bounds").set(i,2.);
+  }
+}
 
 int main (int argc, char** argv)
 {
@@ -340,6 +357,7 @@ int main (int argc, char** argv)
   system.optimization_solver->equality_constraints_jacobian_object = &assemble_opt;
   system.optimization_solver->inequality_constraints_object = &assemble_opt;
   system.optimization_solver->inequality_constraints_jacobian_object = &assemble_opt;
+  system.optimization_solver->lower_and_upper_bounds_object = &assemble_opt;
 
   // system.matrix and system.rhs are used for the gradient and Hessian,
   // so in this case we add an extra matrix and vector to store A and F.
@@ -385,4 +403,3 @@ int main (int argc, char** argv)
 
   return 0;
 }
-
