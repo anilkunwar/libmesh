@@ -256,6 +256,12 @@ void AssembleOptimization::hessian (
 {
   H_f.zero();
   H_f.add(1., *A_matrix);
+
+  // Does TAO require the Hessian of the constraints to be added in here?
+  // Presumably it does, though it's not clear from the documentation.
+  // As a result, this needs to be updated to include:
+  //  \sum_i \lambda_i * Hessian(g_i),
+  // where g_i is the i^th constraint function.
 }
 
 void AssembleOptimization::equality_constraints (
