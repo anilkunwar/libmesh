@@ -67,7 +67,7 @@ AC_DEFUN([CONFIGURE_NLOPT],
 
       # Append nlopt include paths to the CFLAGS variables
       CFLAGS="$saveCFLAGS $NLOPT_INCLUDE"
-      LIBS="$saveLIBS $NLOPT_LIBRARY"
+      LIBS="$saveLIBS $NLOPT_LIBRARY -lm"
 
       AC_LINK_IFELSE(
            [

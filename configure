@@ -35535,7 +35535,7 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
       # Append nlopt include paths to the CFLAGS variables
       CFLAGS="$saveCFLAGS $NLOPT_INCLUDE"
-      LIBS="$saveLIBS $NLOPT_LIBRARY"
+      LIBS="$saveLIBS $NLOPT_LIBRARY -lm"
 
       cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
