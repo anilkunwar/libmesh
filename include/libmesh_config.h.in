@@ -348,6 +348,9 @@
 /* Flag indicating whether the library will be compiled with Netcdf support */
 #undef HAVE_NETCDF
 
+/* Flag indicating whether the library will be compiled with NLOPT support */
+#undef HAVE_NLOPT
+
 /* Flag indicating whether the library shall be compiled to use the Nox solver
    collection */
 #undef HAVE_NOX
