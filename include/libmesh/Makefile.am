@@ -330,6 +330,7 @@ BUILT_SOURCES = \
         linear_solver.h \
         memory_solution_history.h \
         newton_solver.h \
+        nlopt_optimization_solver.h \
         no_solution_history.h \
         nonlinear_solver.h \
         optimization_solver.h \
@@ -1471,6 +1472,9 @@ memory_solution_history.h: $(top_srcdir)/include/solvers/memory_solution_history
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
 newton_solver.h: $(top_srcdir)/include/solvers/newton_solver.h
+	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
+
+nlopt_optimization_solver.h: $(top_srcdir)/include/solvers/nlopt_optimization_solver.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
 no_solution_history.h: $(top_srcdir)/include/solvers/no_solution_history.h
